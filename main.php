@@ -1,3 +1,10 @@
+<!--
+    Jangan diambil bangsaddd, minimal coding sendiri cokkkkkk.
+    yang ngubah mamaknya lonte, anak haram, gapunya akhlak, kontol yang ngubah pokoknya.
+-->
+<!DOCTYPE html>
+<html lang="id">
+
 <!DOCTYPE html>
 <html lang="id">
 <head>

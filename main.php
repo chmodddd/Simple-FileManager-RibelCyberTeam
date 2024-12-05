@@ -33,7 +33,6 @@
         <?php
         error_reporting(0);
         @clearstatcache();
-        @mb_internal_encoding('UTF-8');
         set_time_limit(0);
         @ini_set('error_log',null);
         @ini_set('log_errors',0);

